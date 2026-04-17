@@ -13,23 +13,19 @@ const config: Config = {
         mono: ["var(--font-geist-mono)", "monospace"],
       },
       colors: {
-        // Sales Progressor design tokens
-        surface: {
-          DEFAULT: "#0f1117",
-          raised: "#161b27",
-          border: "#1e2535",
-          hover: "#1a2133",
-        },
-        brand: {
-          DEFAULT: "#3b82f6",
-          dim: "#1d4ed8",
-          muted: "rgba(59,130,246,0.1)",
-        },
-        status: {
-          active: "#22c55e",
-          on_hold: "#f59e0b",
-          completed: "#6b7280",
-          withdrawn: "#ef4444",
+        // Sales Progressor light theme tokens
+        sp: {
+          bg:         "#f0f4f8",
+          sidebar:    "#ffffff",
+          card:       "#ffffff",
+          "card-hover": "#f7f9fc",
+          border:     "#e4e9f0",
+          brand:      "#3b82f6",
+          "brand-hover": "#2563eb",
+          "brand-light": "#eff6ff",
+          "text-primary":   "#111827",
+          "text-secondary": "#4b5563",
+          "text-muted":     "#9ca3af",
         },
       },
     },

@@ -1,13 +1,14 @@
 // Sales Progressor - Prisma Schema
-// Sprint 1: Foundation + Transactions Core
+// Sprint 2: Milestones Engine added
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 // ─── Agency ───────────────────────────────────────────────────────────────────
@@ -35,8 +36,9 @@ model User {
 
   agency               Agency                @relation(fields: [agencyId], references: [id])
   assignedTransactions PropertyTransaction[] @relation("AssignedUser")
+  milestoneCompletions MilestoneCompletion[] @relation("CompletedBy")
 
-  // NextAuth session fields (extend for full auth in future sprints)
+  // NextAuth fields
   emailVerified DateTime?
   image         String?
   accounts      Account[]
@@ -65,6 +67,7 @@ model PropertyTransaction {
   agency       Agency   @relation(fields: [agencyId], references: [id])
   assignedUser User?    @relation("AssignedUser", fields: [assignedUserId], references: [id])
   contacts     Contact[]
+  milestoneCompletions MilestoneCompletion[]
 }
 
 enum TransactionStatus {
@@ -97,8 +100,58 @@ enum ContactRole {
   other
 }
 
+// ─── MilestoneDefinition ──────────────────────────────────────────────────────
+// Template records — seeded once, never created per transaction.
+// All milestones block exchange except the gate milestones (PM27/VM20)
+// and post-exchange milestones (PM16/PM17/VM12/VM13).
+
+model MilestoneDefinition {
+  id             String          @id @default(cuid())
+  code           String          @unique   // e.g. "PM1", "VM5"
+  name           String
+  side           MilestoneSide
+  orderIndex     Int             // Sequence within its side (1-based)
+  blocksExchange Boolean         @default(true)
+  timeSensitive  Boolean         @default(false)  // Requires event_date on completion
+  isExchangeGate Boolean         @default(false)  // VM20 / PM27 — unlocks only when all predecessors done
+  isPostExchange Boolean         @default(false)  // PM16/PM17/VM12/VM13 — excluded from gate
+  createdAt      DateTime        @default(now())
+
+  completions    MilestoneCompletion[]
+}
+
+enum MilestoneSide {
+  vendor
+  purchaser
+}
+
+// ─── MilestoneCompletion ──────────────────────────────────────────────────────
+// Transaction-specific completion record.
+// Never deleted — use isActive = false to deactivate.
+// Only isActive = true records count for logic.
+
+model MilestoneCompletion {
+  id                    String   @id @default(cuid())
+  transactionId         String
+  milestoneDefinitionId String
+  isActive              Boolean  @default(true)
+  completedAt           DateTime @default(now())   // When marked complete in system
+  eventDate             DateTime?                  // Real-world event date (time-sensitive milestones only)
+  isNotRequired         Boolean  @default(false)   // Explicit not-required state
+  notRequiredReason     String?                    // Audit: why it was marked not required
+  completedById         String?                    // Which user marked it complete
+  statusReason          String?                    // Optional note on completion or deactivation
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  transaction           PropertyTransaction  @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  milestoneDefinition   MilestoneDefinition  @relation(fields: [milestoneDefinitionId], references: [id])
+  completedBy           User?                @relation("CompletedBy", fields: [completedById], references: [id])
+
+  @@index([transactionId, milestoneDefinitionId])
+}
+
 // ─── NextAuth Models ──────────────────────────────────────────────────────────
-// Required by NextAuth adapter. Extend as needed in future sprints.
 
 model Account {
   id                String  @id @default(cuid())

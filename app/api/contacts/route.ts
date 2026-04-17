@@ -1,4 +1,3 @@
-export const dynamic = "force-dynamic";
 // app/api/contacts/route.ts
 // POST: create a contact on a transaction
 // DELETE: remove a contact

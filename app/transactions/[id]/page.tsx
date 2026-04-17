@@ -1,15 +1,16 @@
 // app/transactions/[id]/page.tsx
-// Single transaction detail page — light theme.
-// Structured for future milestone/reminder sections.
+// Transaction detail page — Sprint 2: includes milestone panel.
 
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { requireSession } from "@/lib/session";
 import { getTransaction } from "@/lib/services/transactions";
+import { getMilestonesForTransaction } from "@/lib/services/milestones";
 import { AppShell } from "@/components/layout/AppShell";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { ContactsSection } from "@/components/contacts/ContactsSection";
+import { MilestonePanel } from "@/components/milestones/MilestonePanel";
 import { formatDate } from "@/lib/utils";
 
 export default async function TransactionDetailPage({
@@ -20,7 +21,10 @@ export default async function TransactionDetailPage({
   const { id } = await params;
   const session = await requireSession();
 
-  const transaction = await getTransaction(id, session.user.agencyId);
+  const [transaction, milestoneData] = await Promise.all([
+    getTransaction(id, session.user.agencyId),
+    getMilestonesForTransaction(id, session.user.agencyId).catch(() => null),
+  ]);
 
   if (!transaction) notFound();
 
@@ -30,18 +34,15 @@ export default async function TransactionDetailPage({
         title={transaction.propertyAddress}
         subtitle={transaction.agency.name}
         action={
-          <Link
-            href="/dashboard"
-            className="text-sm text-gray-400 hover:text-gray-600 transition-colors"
-          >
+          <Link href="/dashboard" className="text-sm text-gray-400 hover:text-gray-600 transition-colors">
             ← Dashboard
           </Link>
         }
       />
 
-      <div className="px-8 py-7 space-y-7 max-w-4xl">
+      <div className="px-8 py-7 space-y-8 max-w-4xl">
 
-        {/* ── Transaction metadata card ──────────────────────────────────── */}
+        {/* ── Transaction metadata ───────────────────────────────────────── */}
         <section>
           <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
             Transaction Details
@@ -49,29 +50,38 @@ export default async function TransactionDetailPage({
           <div className="bg-white rounded-xl border border-[#e4e9f0] overflow-hidden"
                style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
             <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-[#f0f4f8]">
-              <MetaField label="Status">
-                <StatusBadge status={transaction.status} />
-              </MetaField>
+              <MetaField label="Status"><StatusBadge status={transaction.status} /></MetaField>
               <MetaField label="Assigned to">
                 <span className="text-sm text-gray-700">
-                  {transaction.assignedUser?.name ?? (
-                    <span className="text-gray-300 italic">Unassigned</span>
-                  )}
+                  {transaction.assignedUser?.name ?? <span className="text-gray-300 italic">Unassigned</span>}
                 </span>
               </MetaField>
               <MetaField label="Expected exchange">
-                <span className="text-sm text-gray-700">
-                  {formatDate(transaction.expectedExchangeDate)}
-                </span>
+                <span className="text-sm text-gray-700">{formatDate(transaction.expectedExchangeDate)}</span>
               </MetaField>
               <MetaField label="Created">
-                <span className="text-sm text-gray-700">
-                  {formatDate(transaction.createdAt)}
-                </span>
+                <span className="text-sm text-gray-700">{formatDate(transaction.createdAt)}</span>
               </MetaField>
             </div>
           </div>
         </section>
+
+        {/* ── Milestones ────────────────────────────────────────────────── */}
+        {milestoneData && (
+          <section>
+            <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-4">
+              Milestone Progress
+            </h2>
+            <MilestonePanel
+              transactionId={transaction.id}
+              vendor={milestoneData.vendor}
+              purchaser={milestoneData.purchaser}
+              exchangeReady={milestoneData.exchangeReady}
+              vendorGateReady={milestoneData.vendorGateReady}
+              purchaserGateReady={milestoneData.purchaserGateReady}
+            />
+          </section>
+        )}
 
         {/* ── Contacts ──────────────────────────────────────────────────── */}
         <ContactsSection
@@ -81,9 +91,8 @@ export default async function TransactionDetailPage({
 
         {/*
           ── Future sections ─────────────────────────────────────────────
-          Sprint 2: Milestone tracking (vendor / purchaser / agent sides)
           Sprint 3: Reminder logs and chase tasks
-          Sprint 4: Exchange readiness indicator
+          Sprint 4: Communications and notes
         */}
       </div>
     </AppShell>

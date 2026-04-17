@@ -1,4 +1,3 @@
-export const dynamic = "force-dynamic";
 // app/api/transactions/route.ts
 // POST: create a new PropertyTransaction
 

@@ -1,9 +1,8 @@
-import type { NextAuthOptions } from "next-auth";
+import NextAuth, { type NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { prisma } from "@/lib/prisma";
 import type { UserRole } from "@prisma/client";
 
-// Shape exposed to the app via useSession() / getServerSession()
 declare module "next-auth" {
   interface Session {
     user: {
@@ -30,7 +29,6 @@ declare module "next-auth/jwt" {
 
 export const authOptions: NextAuthOptions = {
   session: { strategy: "jwt" },
-
   providers: [
     CredentialsProvider({
       name: "credentials",
@@ -39,9 +37,6 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.email) return null;
-
-        const devBypass = process.env.DEV_AUTH_BYPASS === "true";
-        if (!devBypass) return null;
 
         const user = await prisma.user.findUnique({
           where: { email: credentials.email },
@@ -59,7 +54,6 @@ export const authOptions: NextAuthOptions = {
       },
     }),
   ],
-
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
@@ -76,8 +70,9 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
   },
-
   pages: {
     signIn: "/login",
   },
 };
+
+export default NextAuth(authOptions);

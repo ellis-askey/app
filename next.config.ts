@@ -2,13 +2,11 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: "standalone",
-  experimental: {
-    outputFileTracingExcludes: {
-      "*": [
-        "./node_modules/@prisma/engines/**",
-        "./node_modules/prisma/build/**",
-      ],
-    },
+  outputFileTracingExcludes: {
+    "*": [
+      "./node_modules/@prisma/engines/**",
+      "./node_modules/prisma/build/**",
+    ],
   },
 };
 

@@ -1,13 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: "standalone",
-  outputFileTracingExcludes: {
-    "*": [
-      "./node_modules/@prisma/engines/**",
-      "./node_modules/prisma/build/**",
-    ],
-  },
+  // Clean foundation — add headers, rewrites, etc. in later sprints
 };
 
 export default nextConfig;
